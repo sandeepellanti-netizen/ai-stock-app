@@ -1,0 +1,23 @@
+ AI Trading Platform (India)
+RELIANCE / TCS / INFY
+ Analyze
+{% if result %}
+💰 Price: {{result.price}}
+RSI: {{result.rsi}}
+
+Trend: {{result.trend}}
+
+Signal: {{result.signal}}
+
+📊 Sentiment: {{result.sentiment}}
+
+🔮 Predictions
+1 Week: {{result.week}}
+
+1 Month: {{result.month}}
+
+📰 News
+{% for h in result.headlines %}
+{{h}}
+{% endfor %}
+{% endif %}
