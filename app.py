@@ -1,70 +1,64 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template, request, jsonify
 import yfinance as yf
 import pandas as pd
+from services.indicators import get_indicators
+from services.prediction import predict_prices
+from services.news import get_news_sentiment
 
 app = Flask(__name__)
 
-def rsi(data, period=14):
-    close = data["Close"].dropna()
-    delta = close.diff()
-
-    gain = (delta.where(delta > 0, 0)).rolling(period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
-
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
-
-    return rsi
-
-def trend(data):
-    close = data["Close"].dropna()
-
-    if len(close) < 20:
-        return "Not enough data"
-
-    latest = float(close.iloc[-1])
-    past = float(close.iloc[-20])
-
-    if latest > past:
-        return "UPTREND 📈"
-    else:
-        return "DOWNTREND 📉"
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET","POST"])
 def home():
-    result = ""
-    if request.method == "POST":
-        symbol = request.form.get("symbol")
+    result=None
+    symbol=None
 
-        try:
-            data = yf.download(symbol, period="3mo", interval="1d")
+    if request.method=="POST":
+        symbol=request.form.get("symbol")
 
-            # Fix multi-index issue
-            if isinstance(data.columns, pd.MultiIndex):
-                data.columns = data.columns.get_level_values(0)
+        # Force Indian stocks (.NS)
+        if not symbol.endswith(".NS"):
+            symbol = symbol + ".NS"
 
-            close = data["Close"].dropna()
+        data=yf.download(symbol, period="6mo")
 
-            if close.empty:
-                result = "No data found"
-            else:
-                price = float(close.iloc[-1])
-                rsi_val = float(rsi(data).dropna().iloc[-1])
-                trend_val = trend(data)
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns=data.columns.get_level_values(0)
 
-                result = f"Price: {price:.2f} <br> RSI: {rsi_val:.2f} <br> Trend: {trend_val}"
+        close=data["Close"].dropna()
 
-        except Exception as e:
-            result = f"Error: {str(e)}"
+        indicators=get_indicators(data)
+        prediction=predict_prices(data)
+        news=get_news_sentiment(symbol)
 
-    return render_template_string("""
-    <h2>Ultimate AI Trading App 💎</h2>
-    <form method="post">
-        <input name="symbol" placeholder="AAPL or RELIANCE.NS">
-        <button type="submit">Analyze</button>
-    </form>
-    <p>{{result|safe}}</p>
-    """, result=result)
+        result={
+            "price":float(close.iloc[-1]),
+            "rsi":indicators["rsi"],
+            "trend":indicators["trend"],
+            "signal":indicators["signal"],
+            "week":prediction["week"],
+            "month":prediction["month"],
+            "sentiment":news["sentiment"],
+            "headlines":news["headlines"]
+        }
 
-if __name__ == "__main__":
+    return render_template("index.html", result=result, symbol=symbol)
+
+@app.route("/chart")
+def chart():
+    symbol=request.args.get("symbol")
+
+    if not symbol.endswith(".NS"):
+        symbol = symbol + ".NS"
+
+    data=yf.download(symbol, period="6mo")
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns=data.columns.get_level_values(0)
+
+    return jsonify({
+        "close":data["Close"].dropna().tolist(),
+        "dates":data.index.strftime("%Y-%m-%d").tolist()
+    })
+
+if __name__=="__main__":
     app.run()

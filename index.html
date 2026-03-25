@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Indian AI Trading Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>🇮🇳 AI Trading Platform (India)</h1>
+
+<form method="post">
+<input name="symbol" placeholder="RELIANCE / TCS / INFY">
+<button>Analyze</button>
+</form>
+
+{% if result %}
+<h2>💰 Price: {{result.price}}</h2>
+<p>RSI: {{result.rsi}}</p>
+<p>Trend: {{result.trend}}</p>
+<p>Signal: {{result.signal}}</p>
+<p>📊 Sentiment: {{result.sentiment}}</p>
+
+<h3>🔮 Predictions</h3>
+<p>1 Week: {{result.week}}</p>
+<p>1 Month: {{result.month}}</p>
+
+<h3>📰 News</h3>
+<ul>
+{% for h in result.headlines %}
+<li>{{h}}</li>
+{% endfor %}
+</ul>
+
+<canvas id="chart"></canvas>
+
+<script>
+fetch("/chart?symbol={{symbol}}")
+.then(res=>res.json())
+.then(data=>{
+new Chart(document.getElementById("chart"),{
+type:"line",
+data:{
+labels:data.dates,
+datasets:[{label:"Price",data:data.close}]
+}
+})
+})
+</script>
+
+{% endif %}
+</body>
+</html>
