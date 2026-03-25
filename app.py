@@ -39,11 +39,17 @@ def home():
         try:
             data = yf.download(symbol, period="3mo", interval="1d")
 
-            if data.empty:
-                result = "Invalid stock symbol"
+            # Fix multi-index issue
+            if isinstance(data.columns, pd.MultiIndex):
+                data.columns = data.columns.get_level_values(0)
+
+            close = data["Close"].dropna()
+
+            if close.empty:
+                result = "No data found"
             else:
-                price = float(data["Close"].iloc[-1])
-                rsi_val = float(rsi(data).iloc[-1])
+                price = float(close.iloc[-1])
+                rsi_val = float(rsi(data).dropna().iloc[-1])
                 trend_val = trend(data)
 
                 result = f"Price: {price:.2f} <br> RSI: {rsi_val:.2f} <br> Trend: {trend_val}"
@@ -52,7 +58,7 @@ def home():
             result = f"Error: {str(e)}"
 
     return render_template_string("""
-    <h2>Ultimate AI Trading App</h2>
+    <h2>Ultimate AI Trading App 💎</h2>
     <form method="post">
         <input name="symbol" placeholder="AAPL or RELIANCE.NS">
         <button type="submit">Analyze</button>
@@ -61,4 +67,4 @@ def home():
     """, result=result)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run()
