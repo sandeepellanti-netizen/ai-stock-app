@@ -1,7 +1,3 @@
 flask
-gunicorn
-pandas
-numpy
-matplotlib
-requests
 yfinance
+pandas
