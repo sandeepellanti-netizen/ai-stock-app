@@ -1,14 +1,33 @@
-def get_indicators(data):
-    close=data["Close"].dropna()
 
-    delta=close.diff()
-    gain=(delta.where(delta>0,0)).rolling(14).mean()
-    loss=(-delta.where(delta<0,0)).rolling(14).mean()
+import pandas as pd
 
-    rs=gain/loss
-    rsi=float((100-(100/(1+rs))).dropna().iloc[-1])
+def rsi(df):
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs.iloc[-1]))
 
-    trend="UPTREND 📈" if close.iloc[-1]>close.iloc[-20] else "DOWNTREND 📉"
-    signal="BUY 🟢" if rsi<30 else "SELL 🔴" if rsi>70 else "HOLD 🟡"
+def ema(df):
+    return df['Close'].ewm(span=20).mean().iloc[-1]
 
-    return {"rsi":round(rsi,2),"trend":trend,"signal":signal}
+def macd(df):
+    exp1 = df['Close'].ewm(span=12).mean()
+    exp2 = df['Close'].ewm(span=26).mean()
+    return (exp1 - exp2).iloc[-1]
+
+def trend(df):
+    return "UPTREND" if df['Close'].iloc[-1] > df['Close'].rolling(20).mean().iloc[-1] else "DOWNTREND"
+
+def signal(df):
+    r = rsi(df)
+    if r < 30:
+        return "BUY"
+    elif r > 70:
+        return "SELL"
+    return "HOLD"
+
+def support_resistance(df):
+    support = df['Low'].rolling(20).min().iloc[-1]
+    resistance = df['High'].rolling(20).max().iloc[-1]
+    return support, resistance

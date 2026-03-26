@@ -1,5 +1,7 @@
-def predict_lightweight(price):
-    # Simple ML-like logic
-    pred_week = price * 1.02
-    pred_month = price * 1.05
-    return pred_week, pred_month
+
+def predict_lightweight(df):
+    last = df['Close'].iloc[-1]
+    return {
+        "1_week": round(last * 1.02, 2),
+        "1_month": round(last * 1.05, 2)
+    }
