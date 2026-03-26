@@ -11,7 +11,6 @@ app = Flask(__name__)
 @app.route("/", methods=["GET","POST"])
 def home():
     result=None
-    symbol=None
 
     if request.method=="POST":
         symbol=request.form.get("symbol") + ".NS"
