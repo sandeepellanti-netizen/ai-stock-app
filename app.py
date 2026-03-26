@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 
 # ---------------- NEWS FUNCTIONS ----------------
-NEWS_API_KEY = "YOUR_NEWS_API_KEY"
+NEWS_API_KEY = "a0ffc5cef7fc4ea58edae0d50e263f2b"
 
 def get_news(symbol):
     try:
