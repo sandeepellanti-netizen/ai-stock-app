@@ -12,4 +12,3 @@ def get_indicators(data):
     signal="BUY 🟢" if rsi<30 else "SELL 🔴" if rsi>70 else "HOLD 🟡"
 
     return {"rsi":round(rsi,2),"trend":trend,"signal":signal}
-  
