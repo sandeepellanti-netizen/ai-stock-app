@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import yfinance as yf
 import pandas as pd
-from services.indicators import get_indicators
-from services.prediction import predict_prices
-from services.news import get_news_sentiment
+from services.indicators import *
+from services.ml_model import predict_lightweight
+from services.news import get_news, analyze_sentiment
+from services.scanner import scan_market
 
 app = Flask(__name__)
 
@@ -13,52 +14,31 @@ def home():
     symbol=None
 
     if request.method=="POST":
-        symbol=request.form.get("symbol")
+        symbol=request.form.get("symbol") + ".NS"
+        df=yf.download(symbol, period="1y")
 
-        # Force Indian stocks (.NS)
-        if not symbol.endswith(".NS"):
-            symbol = symbol + ".NS"
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns=df.columns.get_level_values(0)
 
-        data=yf.download(symbol, period="6mo")
-
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns=data.columns.get_level_values(0)
-
-        close=data["Close"].dropna()
-
-        indicators=get_indicators(data)
-        prediction=predict_prices(data)
-        news=get_news_sentiment(symbol)
+        pred = predict_lightweight(df)
 
         result={
-            "price":float(close.iloc[-1]),
-            "rsi":indicators["rsi"],
-            "trend":indicators["trend"],
-            "signal":indicators["signal"],
-            "week":prediction["week"],
-            "month":prediction["month"],
-            "sentiment":news["sentiment"],
-            "headlines":news["headlines"]
+            "price":round(float(df["Close"].iloc[-1]),2),
+            "rsi":rsi(df),
+            "ema":ema(df),
+            "macd":macd(df),
+            "signal":signal(df),
+            "trend":trend(df),
+            "prediction":pred,
+            "news":get_news(symbol),
+            "sentiment":analyze_sentiment(get_news(symbol))
         }
 
-    return render_template("index.html", result=result, symbol=symbol)
+    return render_template("index.html", result=result)
 
-@app.route("/chart")
-def chart():
-    symbol=request.args.get("symbol")
-
-    if not symbol.endswith(".NS"):
-        symbol = symbol + ".NS"
-
-    data=yf.download(symbol, period="6mo")
-
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns=data.columns.get_level_values(0)
-
-    return jsonify({
-        "close":data["Close"].dropna().tolist(),
-        "dates":data.index.strftime("%Y-%m-%d").tolist()
-    })
+@app.route("/scanner")
+def scanner():
+    return jsonify(scan_market())
 
 if __name__=="__main__":
     app.run()
