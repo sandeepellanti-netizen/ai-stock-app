@@ -1,18 +1,21 @@
-
 import yfinance as yf
 from services.indicators import support_resistance
 
-stocks = ["RELIANCE.NS","TCS.NS","INFY.NS","HDFCBANK.NS","ICICIBANK.NS"]
+stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS"]  # keep small for Render
 
 def scan_market():
-    results=[]
+    results = []
+
     for s in stocks:
         try:
-            df=yf.download(s, period="3mo")
+            df = yf.download(s, period="3mo", progress=False)
 
-            last=df['Close'].iloc[-1]
-            volume=df['Volume'].iloc[-1]
-            avg_vol=df['Volume'].rolling(20).mean().iloc[-1]
+            if df.empty:
+                continue
+
+            last = float(df['Close'].iloc[-1])
+            volume = float(df['Volume'].iloc[-1])
+            avg_vol = float(df['Volume'].rolling(20).mean().iloc[-1])
 
             support, resistance = support_resistance(df)
 
@@ -21,20 +24,23 @@ def scan_market():
             volume_spike = volume > 1.5 * avg_vol
 
             if breakout_resistance and volume_spike:
-                signal = "STRONG BUY (Resistance Breakout)"
+                signal = "STRONG BUY"
             elif breakout_support:
-                signal = "BREAKDOWN (Bearish)"
+                signal = "BREAKDOWN"
             else:
                 signal = "NO TRADE"
 
             results.append({
                 "symbol": s,
-                "price": round(float(last),2),
-                "support": round(float(support),2),
-                "resistance": round(float(resistance),2),
+                "price": round(last, 2),
+                "support": round(float(support), 2),
+                "resistance": round(float(resistance), 2),
                 "volume_spike": volume_spike,
                 "signal": signal
             })
-        except:
+
+        except Exception as e:
+            print("Scanner error:", s, str(e))  # 🔥 IMPORTANT DEBUG
             continue
+
     return results
