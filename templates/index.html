@@ -1,124 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>🇮🇳 Pro AI Trading Dashboard</title>
+<title>Indian AI Trading Platform</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-    background:#0f172a;
-    color:white;
-    font-family:Arial;
-    margin:0;
-}
-
-.header {
-    padding:20px;
-    font-size:24px;
-    font-weight:bold;
-    text-align:center;
-}
-
-.search-box {
-    text-align:center;
-    margin:20px;
-}
-
-input {
-    padding:12px;
-    width:250px;
-    border-radius:5px;
-    border:none;
-}
-
-button {
-    padding:12px;
-    background:#22c55e;
-    border:none;
-    color:white;
-    cursor:pointer;
-}
-
-.container {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-    padding:20px;
-}
-
-.card {
-    background:#1e293b;
-    padding:20px;
-    border-radius:10px;
-}
-
-.big {
-    font-size:28px;
-    font-weight:bold;
-}
-
-.green { color:#22c55e; }
-.red { color:#ef4444; }
-.yellow { color:#facc15; }
-
-</style>
 </head>
-
 <body>
 
-<div class="header">🇮🇳 AI Trading Dashboard</div>
+<h1>🇮🇳 AI Trading Platform (India)</h1>
 
-<form method="POST" class="search-box">
-<input list="stocks" name="symbol" placeholder="Search stock (RELIANCE, TCS)">
-<datalist id="stocks">
-<option value="RELIANCE">
-<option value="TCS">
-<option value="INFY">
-<option value="HDFCBANK">
-<option value="ICICIBANK">
-<option value="SBIN">
-<option value="LT">
-<option value="ITC">
-</datalist>
+<form method="post">
+<input name="symbol" placeholder="RELIANCE / TCS / INFY">
 <button>Analyze</button>
 </form>
 
 {% if result %}
-
-<div class="container">
-
-<div class="card">
-<div class="big">₹ {{result.price}}</div>
+<h2>💰 Price: {{result.price}}</h2>
 <p>RSI: {{result.rsi}}</p>
 <p>Trend: {{result.trend}}</p>
-</div>
+<p>Signal: {{result.signal}}</p>
+<p>📊 Sentiment: {{result.sentiment}}</p>
 
-<div class="card">
-<h3>Signal</h3>
-<p class="big">{{result.signal}}</p>
-<p>Sentiment: {{result.sentiment}}</p>
-</div>
+<h3>🔮 Predictions</h3>
+<p>1 Week: {{result.week}}</p>
+<p>1 Month: {{result.month}}</p>
 
-<div class="card">
-<h3>Predictions</h3>
-<p>1 Week: ₹ {{result.week}}</p>
-<p>1 Month: ₹ {{result.month}}</p>
-</div>
-
-<div class="card">
-<h3>News</h3>
+<h3>📰 News</h3>
 <ul>
 {% for h in result.headlines %}
 <li>{{h}}</li>
 {% endfor %}
 </ul>
-</div>
 
-</div>
-
-<div class="card" style="margin:20px;">
 <canvas id="chart"></canvas>
-</div>
 
 <script>
 fetch("/chart?symbol={{symbol}}")
@@ -128,17 +41,12 @@ new Chart(document.getElementById("chart"),{
 type:"line",
 data:{
 labels:data.dates,
-datasets:[{
-label:"Price",
-data:data.close,
-borderColor:"#22c55e"
-}]
+datasets:[{label:"Price",data:data.close}]
 }
 })
 })
 </script>
 
 {% endif %}
-
 </body>
 </html>
