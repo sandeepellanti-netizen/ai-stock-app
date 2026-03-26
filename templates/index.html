@@ -1,51 +1,133 @@
-
 <!DOCTYPE html>
 <html>
-<head><title>AI Trading Platform</title></head>
+<head>
+    <title>AI Trading Platform (India)</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+            background: #f4f6f8;
+        }
+        h1 {
+            color: #222;
+        }
+        input {
+            padding: 10px;
+            width: 220px;
+        }
+        button {
+            padding: 10px 15px;
+            margin-left: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .card {
+            background: white;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
 <body>
 
-<h1>🇮🇳 AI Trading Platform</h1>
+<h1>🇮🇳 AI Trading Platform (India)</h1>
 
-<form method="POST">
-<input name="symbol" placeholder="RELIANCE / TCS / INFY">
-<button>Analyze</button>
-</form>
+<!-- SEARCH -->
+<input id="stock" placeholder="RELIANCE.NS / TCS.NS">
+<button onclick="analyze()">Analyze</button>
 
-{% if result %}
-<p>Price: {{result.price}}</p>
-<p>RSI: {{result.rsi}}</p>
-<p>Trend: {{result.trend}}</p>
-<p>Signal: {{result.signal}}</p>
-<p>Sentiment: {{result.sentiment}}</p>
+<!-- RESULT -->
+<div id="result" class="card"></div>
 
-<h3>Predictions</h3>
-<p>1 Week: {{result.prediction['1_week']}}</p>
-<p>1 Month: {{result.prediction['1_month']}}</p>
-
-<h3>News</h3>
-<ul>
-{% for n in result.news %}
-<li><a href="{{n.url}}">{{n.title}}</a></li>
-{% endfor %}
-</ul>
-{% endif %}
-
-<h3>Scanner (Support/Resistance Breakout)</h3>
+<!-- SCANNER -->
+<h2>📊 Scanner (Support/Resistance Breakout)</h2>
 <button onclick="loadScanner()">Run Scanner</button>
-<ul id="scanner"></ul>
+
+<div id="scanner" class="card"></div>
 
 <script>
-function loadScanner(){
-fetch('/scanner')
-.then(r=>r.json())
-.then(data=>{
-let el=document.getElementById('scanner');
-el.innerHTML='';
-data.forEach(s=>{
-el.innerHTML+=`<li>${s.symbol} | ₹${s.price} | Support: ${s.support} | Resistance: ${s.resistance} | Volume Spike: ${s.volume_spike} | Signal: ${s.signal}</li>`;
-});
-});
+
+function analyze() {
+    let symbol = document.getElementById("stock").value;
+
+    fetch('/analyze?symbol=' + symbol)
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.error){
+            document.getElementById("result").innerHTML = data.error;
+            return;
+        }
+
+        let newsHTML = "";
+        if(data.news && data.news.length > 0){
+            data.news.forEach(n => {
+                newsHTML += `<li><a href="${n.url}" target="_blank">${n.title}</a></li>`;
+            });
+        } else {
+            newsHTML = "<li>No news available</li>";
+        }
+
+        document.getElementById("result").innerHTML = `
+        <h3>${data.symbol}</h3>
+        <p><b>💰 Price:</b> ₹${data.price}</p>
+        <p><b>RSI:</b> ${data.rsi}</p>
+        <p><b>Trend:</b> ${data.trend}</p>
+        <p><b>Signal:</b> ${data.signal}</p>
+        <p><b>Sentiment:</b> ${data.sentiment}</p>
+
+        <h4>🔮 Predictions</h4>
+        <p>1 Week: ₹${data.pred_1w}</p>
+        <p>1 Month: ₹${data.pred_1m}</p>
+
+        <h4>📰 News</h4>
+        <ul>${newsHTML}</ul>
+        `;
+    })
+    .catch(err => {
+        document.getElementById("result").innerHTML = "Error loading data";
+    });
 }
+
+
+function loadScanner() {
+    fetch('/scanner')
+    .then(res => res.json())
+    .then(data => {
+
+        let el = document.getElementById("scanner");
+
+        if(!data || data.length === 0){
+            el.innerHTML = "<p>No breakout stocks found today</p>";
+            return;
+        }
+
+        el.innerHTML = "";
+
+        data.forEach(s => {
+            el.innerHTML += `
+            <div style="border-bottom:1px solid #ddd; padding:10px;">
+                <b>${s.symbol}</b> | ₹${s.price}<br>
+                Support: ${s.support} | Resistance: ${s.resistance}<br>
+                Volume Spike: ${s.volume_spike}<br>
+                <b>Signal: ${s.signal}</b>
+            </div>
+            `;
+        });
+    })
+    .catch(err => {
+        document.getElementById("scanner").innerHTML = "Error loading scanner";
+    });
+}
+
 </script>
 
 </body>
