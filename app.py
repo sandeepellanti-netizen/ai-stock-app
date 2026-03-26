@@ -1,46 +1,46 @@
-from flask import Flask, render_template, request, jsonify
-import yfinance as yf
-import pandas as pd
-from services.indicators import *
-from services.ml_model import predict_lightweight
-from services.news import get_news, analyze_sentiment
-from services.scanner import scan_market
+import requests
 
-app = Flask(__name__)
+NEWS_API_KEY = "YOUR_NEWS_API_KEY"  # optional
 
-@app.route("/", methods=["GET","POST"])
-def home():
-    result=None
+def get_news(symbol):
+    try:
+        url = f"https://newsapi.org/v2/everything?q={symbol}&apiKey={NEWS_API_KEY}"
+        response = requests.get(url).json()
 
-    if request.method=="POST":
-        symbol=request.form.get("symbol") + ".NS"
-        df=yf.download(symbol, period="1y")
+        articles = []
+        for article in response.get("articles", [])[:5]:
+            articles.append({
+                "title": article["title"],
+                "url": article["url"]
+            })
 
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns=df.columns.get_level_values(0)
+        return articles
 
-        pred = predict_lightweight(df)
+    except Exception:
+        return []
 
-        result={
-            "price":round(float(df["Close"].iloc[-1]),2),
-            "rsi":rsi(df),
-            "ema":ema(df),
-            "macd":macd(df),
-            "signal":signal(df),
-            "trend":trend(df),
-            "prediction":pred,
-            "news":get_news(symbol),
-            "sentiment":analyze_sentiment(get_news(symbol))
-        }
+def analyze_sentiment(news_list):
+    if not news_list:
+        return "Neutral"
 
-    return render_template("index.html", result=result)
+    text = " ".join([n["title"] for n in news_list]).lower()
 
-@app.route("/scanner")
-def scanner():
-    return jsonify(scan_market())
+    positive_words = ["gain", "bull", "rise", "profit", "growth"]
+    negative_words = ["fall", "bear", "loss", "drop", "decline"]
 
-import os
+    score = 0
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    for word in positive_words:
+        if word in text:
+            score += 1
+
+    for word in negative_words:
+        if word in text:
+            score -= 1
+
+    if score > 0:
+        return "Positive"
+    elif score < 0:
+        return "Negative"
+    else:
+        return "Neutral"
